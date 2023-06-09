@@ -1,0 +1,382 @@
+
+package cs1.MineSweeperApp;
+
+import  cs1.app.*;
+
+public class MineSweeperApp
+{
+    void printTable( int[][] table )
+    {     
+        for ( int r = 0; r < table.length; r++ ) 
+        {
+            for ( int c = 0; c < table[0].length; c++ ) 
+            {
+                int curValue = table[r][c];
+                System.out.print( curValue + ", " );
+            }
+            
+            System.out.println();
+        }
+    }
+    
+    void plantMines( int[][] field )
+    {
+        for ( int r = 0; r < field.length; r++ ) 
+        {
+            for ( int c = 0; c < field[0].length; c++ ) 
+            {
+                int randomNum = canvas.getRandomInt(1, 10);
+                if ( randomNum <= 2 ) 
+                {
+                    field[ r ][ c ] = 9;
+                }
+            }
+        }
+    }
+    
+    void setFlag( int[][] field, int row, int col )
+    {
+        if ( field[ row ][ col ] < 10 ) 
+        {
+            field[ row ][ col ] += 20;
+        }
+        else if ( field[ row ][ col ] > 19 )
+        {
+            field[ row ][ col ] -= 20;
+        }
+    }
+    
+    boolean isCleared( int[][] field )
+    {
+        for ( int r = 0; r < field.length; r++ )
+        {
+            for ( int c = 0; c < field[0].length; c++ )
+            {
+                if ( field[ r ][ c ] <= 9 || ( field[ r ][ c ] < 29 && field[ r ][ c ] > 19 ) )
+                {
+                    return false;
+                }
+            }
+        }
+        
+        return true; 
+    }
+    
+    void openMines( int[][] field )
+    {
+        for ( int r = 0; r < field.length; r++ )
+        {
+            for ( int c = 0; c < field[0].length; c++ )
+            {
+                if ( field[ r ][ c ] == 9 )
+                {
+                    field[ r ][ c ] = field[ r ][ c ] + 10;
+                }
+            }
+        }
+    }
+       
+    boolean isValid ( int[][] field, int row, int col ) 
+    {
+        int numRows = field.length;
+        int numCols = field[0].length;
+        
+        if ( row >= numRows || col >= numCols || row < 0 || col < 0 )
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+    
+    int countMines( int[][] field, int row, int col )
+    {
+        int cenRow = row;
+        int cenCol = col;
+        int mines = 0;
+        
+        for ( int r = row - 1; r <= row + 1; r++ )
+        {
+            for ( int c = col - 1; c <= col + 1; c++ )
+            {   
+                boolean result = isValid( field, r, c );
+                
+                if ( result == true && field[ r ][ c ] == 9 )
+                {
+                    mines = mines + 1;
+                }
+            }
+        }
+        
+        return mines;
+    }
+    
+    void updateField( int[][] field )
+    {
+        for ( int r = 0; r < field.length; r++ )
+        {
+            for ( int c = 0; c < field[0].length; c++ )
+            {
+                if ( field[ r ][ c ] != 9 )
+                {
+                    int mines = countMines( field, r, c );
+                    
+                    field[ r ][ c ] = mines;
+                }
+            }
+        }
+    }
+    
+    int[][] generateField( int rows, int cols )
+    {
+        int[][] field = new int[ rows ][ cols ];
+        
+        plantMines( field );
+        
+        updateField( field );
+        
+        return field;
+    }
+    
+    void openCell( int[][] field, int row, int col )
+    {
+        if ( field[ row ][ col ] != 0 )
+        {
+            if ( field[ row ][ col ] <= 8 )
+            {
+                field[ row ][ col ] = field[ row ][ col ] + 10;
+            }
+        }
+        else
+        {           
+            for ( int r = row - 1; r <= row + 1; r++ )
+            {
+                for ( int c = col - 1; c <= col + 1; c++ )
+                {   
+                    boolean result = isValid( field, r, c );
+                
+                    if ( result == true && field[ r ][ c ] <= 8)
+                    {
+                        field[ r ][ c ] = field[ r ][ c ] + 10;
+                    }
+                }
+            }
+        }
+    }
+    
+    void drawCell( double x, double y, int value )
+    {
+        double centerX = x;
+        double centerY = y;
+        
+        if ( value <= 9 )
+        {
+            canvas.drawImage( centerX, centerY, "hidden.png" );
+        }
+        else
+        {
+            canvas.drawImage( centerX, centerY, "m" + value + ".png" );
+        }
+    }
+    
+    void drawField( int[][] field, double startX, double startY )
+    {
+        double upperLeftX = startX; 
+        double upperLeftY = startY;
+        
+        for ( int r = 0; r < field.length; r++ )
+        {
+            for ( int c = 0; c < field[0].length; c++ )
+            {
+                drawCell( upperLeftX, upperLeftY, field[ r ][ c ] );
+                
+                upperLeftX = upperLeftX + 36;
+            }
+            
+            upperLeftX = startX;
+            upperLeftY = upperLeftY + 36;          
+        }
+    }
+    
+    void playMineSweeper()
+    {
+        int rows = canvas.getRandomInt( 6, 10 );
+        int cols = canvas.getRandomInt( 6, 8 );
+                
+        int[][] field = generateField( rows, cols );
+        
+        double startX = canvas.getWidth() - 36*cols - ( (canvas.getWidth() - 36*cols)/2 ) + 18;
+        double startY = canvas.getHeight() - 36*rows - ( (canvas.getHeight() - 36*rows)/2 ) + 18;
+        
+        boolean mineTapped = false;
+        
+        while ( mineTapped == false && isCleared( field ) == false )
+        {
+            canvas.clear();
+            
+            canvas.drawImage( canvas.getWidth()/2, canvas.getHeight()/7, "smiley.png" );
+            drawField( field, startX, startY );
+            
+            Touch touch = canvas.waitForTouch();
+            double touchX = touch.getX();
+            double touchY = touch.getY();
+            int numTaps = touch.getTaps();
+            
+            int cellRow = (int) ((touch.getY() - (startY - 36/2)) / 36);
+            int cellCol = (int) ((touch.getX() - (startX - 36/2)) / 36);
+            
+            if ( numTaps == 1 && field[ cellRow ][ cellCol ] <= 8 )
+            {
+                openCell( field, cellRow, cellCol );
+                
+                canvas.drawImage( canvas.getWidth()/2, canvas.getHeight()/7, "winky.png" );
+                canvas.sleep(0.3);
+                canvas.drawImage( canvas.getWidth()/2, canvas.getHeight()/7, "smiley.png" );
+            }
+            else if ( numTaps == 1 && field[ cellRow ][ cellCol ] == 9 )
+            {
+                openMines( field );
+                
+                mineTapped = true;
+            }
+            else
+            {
+                setFlag( field, cellRow, cellCol );
+            }
+        }
+  
+        drawField( field, startX, startY );
+        
+        if ( mineTapped == true )
+        {
+            canvas.drawImage( canvas.getWidth()/2, canvas.getHeight()/7, "sad.png" );
+        }
+        else 
+        {
+            canvas.drawImage( canvas.getWidth()/2, canvas.getHeight()/7, "happy.png" );
+        }
+    }
+      
+    public void run()
+    {
+//        int[][] field = new int[6][7];
+//        plantMines( field );
+//        printTable( field );
+        
+//        int[][] field = { { 9,  9,  2,  1,  0 }, { 3,  4,  9,  2,  1 }, { 9, 12,  1,  3,  9 }, { 1,  1,  0,  2,  9 } };
+//
+//        setFlag( field, 0, 1 );  // put a flag: 9?29
+//        setFlag( field, 3, 2 );  // put a flag: 0?20
+//        setFlag( field, 1, 1 );  // put a flag: 4?24
+//        setFlag( field, 2, 1 );  // no change -- hit on 12
+//
+//        printTable( field );             // displays
+                                 //  9 29  2  1  0
+                                 //  3 24  9  2  1
+                                 //  9 12  1  3  9
+                                 //  1  1 20  2  9
+
+//        setFlag( field, 0, 1 );  // removed a flag: 29?9
+//        setFlag( field, 1, 1 );  // removed a flag: 24?4
+//
+//        printTable( field );             // displays
+                                 //  9  9  2  1  0
+                                 //  3  4  9  2  1
+                                 //  9 12  1  3  9
+                                 //  1  1 20  2  9
+//        
+//        int[][] field = { { 9,  29,   2,   1, 20 }, {23,  24,   9,  12,  1 }, { 9,  12,  11,  13,  9 }, { 1,  11,  10,  12,  9 } };
+//
+//        System.out.println( "is field cleared: " + isCleared( field ) );    // displays false
+        
+//        int[][] field = { {29,  29,  12,  11, 10 }, {23,  24,  29,  12, 11 }, {29,  12,  11,  13, 29 },  {21,  11,  10,  12, 29 } };
+//
+//        System.out.println( "is field cleared: " + isCleared( field ) );    // displays false
+        
+//        int[][] field = { {29,  29,  12,  11, 10 }, {13,  14,  29,  12, 11 }, {29,  12,  11,  13, 29 }, {11,  11,  10,  12, 29 } };
+//
+//        System.out.println( "is field cleared: " + isCleared( field ) );    // displays true
+        
+//        int[][] field = { { 9,  9,  2,  1,  0 }, { 3,  4,  9,  2,  1 }, { 9,  2,  1,  3,  9 }, { 1,  1,  0,  2,  9 } };
+//
+//        openMines( field );
+//        printTable( field );             // displays
+//                                 // 19 19  2  1  0
+//                                 //  3  4 19  2  1
+//                                 // 19  2  1  3 19
+//                                 //  1  1  0  2 19
+        
+//        int[][] field = new int[6][7];
+//        
+//        System.out.println("Is (3, 4) valid: " + isValid( field, 3, 4 ));    // displays true
+//        System.out.println("Is (7, 0) valid: " + isValid( field, 7, 0 ));    // displays false
+//        System.out.println("Is (6, 7) valid: " + isValid( field, 6, 7 ));    // displays true
+//        System.out.println("Is (-1, 7) valid: " + isValid( field, -1, 7 ));    // displays false
+//        System.out.println("Is (-1, -1) valid: " + isValid( field, -1, -1 ));    // displays false
+        
+//        int[][] field = { { 9,  9,  0,  0,  0 }, { 0,  0,  9,  0,  0 }, { 9,  0,  0,  0,  9 }, { 0,  0,  0,  0,  9 } };
+//
+//        int mines = countMines( field, 1, 1 );
+//        System.out.println( "mines around cell (1,1): " + mines);    // displays 4
+        
+//        int mines = countMines( field, 0, 4 );
+//        System.out.println( "mines around cell (0,4): " + mines);    // displays 0
+        
+//        int mines = countMines( field, 8, -1 );
+//        System.out.println( "mines around cell (1,1): " + mines);
+        
+//        int[][] field = { { 9,  9,  0,  0,  0 }, { 0,  0,  9,  0,  0 }, { 9,  0,  0,  0,  9 }, { 0,  0,  0,  0,  9 } };
+//
+//        updateField( field );
+//        printTable( field );             // displays
+                                 //  9  9  2  1  0
+                                 //  3  4  9  2  1
+                                 //  9  2  1  3  9
+                                 //  1  1  0  2  9
+        
+//        int[][] field = generateField( 4, 5 );
+//
+//        printTable( field );             // displays different 4x5 fields each time
+                                 // but they should look correct; for example:
+                                 //  9  9  2  1  0
+                                 //  3  4  9  2  1
+                                 //  9  2  1  3  9
+                                 //  1  1  0  2  9
+//        int[][] field = generateField( 6, 4 );
+//        
+//        printTable( field );
+        
+//        int[][] field = { { 9,  9,  2,  1,  0 }, { 3,  4,  9,  2,  1 }, { 9,  2,  1,  3,  9 }, { 1,  1,  0,  2,  9 } };
+//
+//        openCell( field, 1, 3 );
+//        printTable( field );             // displays [the ~ are put for emphasis, not shown]
+//                                 //  9  9  2  1    0
+//                                 //  3  4  9 ~12~  1    2?12
+//                                 //  9  2  1  3    9
+//                                 //  1  1  0  2    9
+//
+//        openCell( field, 0, 4 );
+//        printTable( field );             // displays [the ~ are put for emphasis, not shown]
+////                                 //  9  9  2 ~11  10~   1?11
+////                                 //  3  4  9 ~12  11~   12 is unchanged
+////                                 //  9  2  1  3   9
+////                                 //  1  1  0  2   9
+////
+//        openCell( field, 0, 3 );
+//        printTable( field );             // displays: no change, cell 11
+                                 // in top row already revealed
+        
+//        drawCell( 100, 200, 20 ); 
+//        drawCell( 100, 300, 0 ); 
+//        drawCell( 100, 400, 10 );
+//        drawCell( 100, 500, 15 );
+               
+//        int[][] field = { { 9,  29,   2,   1, 20 }, {23,  24,   9,  12,  1 }, { 9,  12,  11,  13,  9 }, { 1,  11,  10,  12,  9 } };
+//
+//        drawField( field, 50, 150 );
+        
+        playMineSweeper();
+    }
+}
